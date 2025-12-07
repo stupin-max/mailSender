@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"mailSender/internal/config"
 	"mailSender/internal/file_reader"
 	"mailSender/internal/mail_sender"
 	"net/smtp"
-	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -19,24 +19,16 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	//вынести в конфиг файл
-	settings := mail_sender.GetSettings()
-	settings.SmtpHost = os.Getenv("SMTP_HOST")
-	settings.SmtpPort = os.Getenv("SMTP_PORT")
-	settings.From = os.Getenv("FROM")
-	settings.Password = os.Getenv("PASSWORD")
+	smptSetting := config.GetSmtpSettings()
+	mailSettings := config.GetMailSettings()
 
-	emailsPath := os.Getenv("EMAILS_PATH")
-	templatesPath := os.Getenv("TEMPLATES_PATH")
-
-	auth := smtp.PlainAuth("", settings.From, settings.Password, settings.SmtpHost)
-
-	test, err := file_reader.FileReader(emailsPath)
+	auth := smtp.PlainAuth("", smptSetting.From, smptSetting.Password, smptSetting.SmtpHost)
+	test, err := file_reader.FileReader(mailSettings.EmailsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tmpl, err := template.ParseFiles(templatesPath)
+	tmpl, err := template.ParseFiles(mailSettings.TemplatesPath)
 	if err != nil {
 		log.Fatalf("Ошибка загрузки шаблона: %v", err)
 	}
@@ -49,9 +41,9 @@ func main() {
 			log.Fatalf("Ошибка применения шаблона: %v", err)
 		}
 		err = smtp.SendMail(
-			settings.SmtpHost+":"+settings.SmtpPort,
+			smptSetting.SmtpHost+":"+smptSetting.SmtpPort,
 			auth,
-			settings.From,
+			smptSetting.From,
 			[]string{line.Email},
 			body.Bytes(),
 		)

@@ -2,55 +2,62 @@ package file_reader
 
 import (
 	"encoding/csv"
+	"fmt"
 	"io"
-	"log"
 	"os"
 )
 
-type CsvLine struct {
+type CSVLine struct {
 	Name  string
 	Email string
 }
 
-type CsvLines struct {
-	Lines []CsvLine
+type CSVLines struct {
+	Lines []CSVLine
 }
 
-func line2Model(str []string) *CsvLine {
-	csvLine := &CsvLine{
-		Name:  str[0],
-		Email: str[1],
+func parseCSVLine(record []string) (CSVLine, error) {
+	if len(record) < 2 {
+		return CSVLine{}, fmt.Errorf("invalid CSV record: expected at least 2 columns, got %d", len(record))
 	}
-	return csvLine
+	return CSVLine{
+		Name:  record[0],
+		Email: record[1],
+	}, nil
 }
 
-func FileReader(path string) (*CsvLines, error) {
+func ReadCSV(path string) (*CSVLines, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to open file %s: %w", path, err)
 	}
 	defer file.Close()
 
 	reader := csv.NewReader(file)
+	
+	// Skip header row
 	_, err = reader.Read()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read header: %w", err)
 	}
 
-	lines := &CsvLines{}
+	lines := &CSVLines{}
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
-
-		line := line2Model(record)
-
-		lines.Lines = append(lines.Lines, *line)
-
 		if err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("failed to read CSV record: %w", err)
 		}
+
+		line, err := parseCSVLine(record)
+		if err != nil {
+			return nil, err
+		}
+
+		lines.Lines = append(lines.Lines, line)
 	}
-	return lines, err
+	
+	return lines, nil
 }

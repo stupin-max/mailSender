@@ -1,8 +1,11 @@
 package config
 
-import "os"
+import (
+	"fmt"
+	"os"
+)
 
-type SmptSetting struct {
+type SmtpSetting struct {
 	SmtpHost string
 	SmtpPort string
 	From     string
@@ -14,18 +17,46 @@ type MailSettings struct {
 	TemplatesPath string
 }
 
-func GetSmtpSettings() *SmptSetting {
-	return &SmptSetting{
-		SmtpHost: os.Getenv("SMTP_HOST"),
-		SmtpPort: os.Getenv("SMTP_PORT"),
-		From:     os.Getenv("FROM"),
-		Password: os.Getenv("PASSWORD"),
+func GetSmtpSettings() (*SmtpSetting, error) {
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := os.Getenv("SMTP_PORT")
+	from := os.Getenv("FROM")
+	password := os.Getenv("PASSWORD")
+
+	if smtpHost == "" {
+		return nil, fmt.Errorf("SMTP_HOST environment variable is not set")
 	}
+	if smtpPort == "" {
+		return nil, fmt.Errorf("SMTP_PORT environment variable is not set")
+	}
+	if from == "" {
+		return nil, fmt.Errorf("FROM environment variable is not set")
+	}
+	if password == "" {
+		return nil, fmt.Errorf("PASSWORD environment variable is not set")
+	}
+
+	return &SmtpSetting{
+		SmtpHost: smtpHost,
+		SmtpPort: smtpPort,
+		From:     from,
+		Password: password,
+	}, nil
 }
 
-func GetMailSettings() *MailSettings {
-	return &MailSettings{
-		EmailsPath:    os.Getenv("EMAILS_PATH"),
-		TemplatesPath: os.Getenv("TEMPLATES_PATH"),
+func GetMailSettings() (*MailSettings, error) {
+	emailsPath := os.Getenv("EMAILS_PATH")
+	templatesPath := os.Getenv("TEMPLATES_PATH")
+
+	if emailsPath == "" {
+		return nil, fmt.Errorf("EMAILS_PATH environment variable is not set")
 	}
+	if templatesPath == "" {
+		return nil, fmt.Errorf("TEMPLATES_PATH environment variable is not set")
+	}
+
+	return &MailSettings{
+		EmailsPath:    emailsPath,
+		TemplatesPath: templatesPath,
+	}, nil
 }
